@@ -1,0 +1,90 @@
+local module = {}
+
+local Debris = game:GetService("Debris")
+local RunService = game:GetService("RunService")
+
+local Instance = require(game:GetService("ReplicatedStorage").Modules.System.SystemTasks.Instance);
+local containerName = "Walkspeed_Weight_Container";
+
+local IsServer = RunService:IsServer()
+
+local function Get_Humanoid_Default_Speed()
+	-- Add customs functions to get default speed.
+	return 16
+end
+
+local function Get_Humanoid_Weight_Bin(Humanoid:Humanoid)
+
+	if not Humanoid then return end
+
+	return Humanoid:FindFirstChild(containerName) or Instance.new("Folder", {
+		Name = containerName;
+		Parent = Humanoid;
+	});
+
+end
+
+function module.Update_Player_Walkspeed_Weight(Humanoid)
+
+	if not Humanoid then return end
+
+	local WeightBin = Humanoid:FindFirstChild(containerName) or (IsServer and Get_Humanoid_Weight_Bin(Humanoid));
+	local LowestValue = Get_Humanoid_Default_Speed();
+
+	if WeightBin then
+		for _, WeightValue:NumberValue in pairs(WeightBin:GetChildren()) do
+			if WeightValue.Value < LowestValue then
+				LowestValue = WeightValue.Value
+			end
+		end
+	end
+
+	if LowestValue then
+		Humanoid.WalkSpeed = LowestValue
+	end
+
+end
+
+function module.Update_Weight_Tag(Humanoid:Humanoid, Tag_Name:string, Speed:number, Time_Duration:number)
+	
+	-- Humanoid : Humanoid Instance
+	-- Tag_Name : The name of your Weight
+	-- Speed : The WalkSpeed of the character
+	-- Time_Duration : The amount of time until the weight is destoryed (nil if not destory)
+	
+	if not Humanoid then return end
+	if not Tag_Name then return end
+	if not Speed then return end
+
+	local WeightBin = Get_Humanoid_Weight_Bin(Humanoid)
+
+	local Current_Weight_Factor = WeightBin:FindFirstChild(Tag_Name) or Instance.new("NumberValue", {
+		Name = Tag_Name;
+		Value = Speed;
+		Parent = WeightBin;
+	});
+
+	Current_Weight_Factor.Value = Speed;
+	module.Update_Player_Walkspeed_Weight(Humanoid);
+	
+	if typeof(Time_Duration) == "number" then
+		Debris:AddItem(Current_Weight_Factor, Time_Duration);
+	end
+
+end
+
+function module.Remove_Weight_Tag(Humanoid:Humanoid, Tag_Name:string)
+	
+	--// This function is largely NOT recommended
+	-- // Added mostly for *KNOWN* single uses, such as emotes.
+	
+	local WeightBin = Get_Humanoid_Weight_Bin(Humanoid);
+	local WeightValue = WeightBin and WeightBin:FindFirstChild(Tag_Name);
+	
+	if WeightValue then
+		WeightValue:Destroy();
+	end
+	
+end
+
+return module
