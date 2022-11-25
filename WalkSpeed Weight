@@ -8,9 +8,10 @@ local containerName = "Walkspeed_Weight_Container";
 
 local IsServer = RunService:IsServer()
 
-local function Get_Humanoid_Default_Speed()
+local function Get_Humanoid_Default_Speed(WeightBin)
 	-- Add customs functions to get default speed.
-	return 16
+	local default = WeightBin:FindFirstChild("default")
+	return default and default.Value or 16
 end
 
 local function Get_Humanoid_Weight_Bin(Humanoid:Humanoid)
@@ -29,15 +30,17 @@ function module.Update_Player_Walkspeed_Weight(Humanoid)
 	if not Humanoid then return end
 
 	local WeightBin = Humanoid:FindFirstChild(containerName) or (IsServer and Get_Humanoid_Weight_Bin(Humanoid));
-	local LowestValue = Get_Humanoid_Default_Speed();
+	local LowestValue = nil;
 
 	if WeightBin then
 		for _, WeightValue:NumberValue in pairs(WeightBin:GetChildren()) do
-			if WeightValue.Value < LowestValue then
+			if WeightValue.Name:lower() ~= "default" and (LowestValue == nil or (WeightValue.Value < LowestValue)) then
 				LowestValue = WeightValue.Value
 			end
 		end
 	end
+	
+	LowestValue = LowestValue or Get_Humanoid_Default_Speed(Get_Humanoid_Weight_Bin(Humanoid));
 
 	if LowestValue then
 		Humanoid.WalkSpeed = LowestValue
@@ -45,7 +48,7 @@ function module.Update_Player_Walkspeed_Weight(Humanoid)
 
 end
 
-function module.Update_Weight_Tag(Humanoid:Humanoid, Tag_Name:string, Speed:number, Time_Duration:number)
+function module.Update_Weight_Tag(Humanoid:Humanoid, Tag_Name:string, Speed:number, Time_Duration)
 	
 	-- Humanoid : Humanoid Instance
 	-- Tag_Name : The name of your Weight
@@ -76,7 +79,7 @@ end
 function module.Remove_Weight_Tag(Humanoid:Humanoid, Tag_Name:string)
 	
 	--// This function is largely NOT recommended
-	-- // Added mostly for *KNOWN* single uses, such as emotes.
+	-- // Added mostly for *KNOWN* single uses, such as emotes or temporary stuns that don't the use arbitrary method.
 	
 	local WeightBin = Get_Humanoid_Weight_Bin(Humanoid);
 	local WeightValue = WeightBin and WeightBin:FindFirstChild(Tag_Name);
